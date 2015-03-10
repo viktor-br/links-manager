@@ -1,5 +1,6 @@
 package app;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import core.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
@@ -10,14 +11,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-/**
- * Created by viktor on 28.02.15.
- */
 @RestController
 @ComponentScan(basePackages = {"app"})
 public class ApiItemController {
@@ -40,40 +39,18 @@ public class ApiItemController {
         return this.repository.findByUserId(currentUser.getUser().getId());
     }
 
-    @RequestMapping(value = "/api/link", method = RequestMethod.PUT, consumes="application/json")
-    public Item createLink(@RequestBody Link item) {
+    @RequestMapping(value = "/api/item/{type}", method = RequestMethod.PUT, consumes="application/json")
+    public Item createItem(@PathVariable String type, @RequestBody String json) {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         CurrentUser currentUser = (CurrentUser) authentication.getDetails();
-        item.setUserId(currentUser.getUser().getId());
-        item.setId(UUID.randomUUID());
-        this.repository.save(item);
-        return item;
-    }
-
-    @RequestMapping(value = "/api/book", method = RequestMethod.PUT, consumes="application/json")
-    public Item createBook(@RequestBody Book item) {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CurrentUser currentUser = (CurrentUser) authentication.getDetails();
-        item.setUserId(currentUser.getUser().getId());
-        item.setId(UUID.randomUUID());
-        this.repository.save(item);
-        return item;
-    }
-
-    @RequestMapping(value = "/api/keyphrase", method = RequestMethod.PUT, consumes="application/json")
-    public Item createKeyphrase(@RequestBody Keyphrase item) {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CurrentUser currentUser = (CurrentUser) authentication.getDetails();
-        item.setUserId(currentUser.getUser().getId());
-        item.setId(UUID.randomUUID());
-        this.repository.save(item);
-        return item;
-    }
-
-    @RequestMapping(value = "/api/video", method = RequestMethod.PUT, consumes="application/json")
-    public Item createVideo(@RequestBody Video item) {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CurrentUser currentUser = (CurrentUser) authentication.getDetails();
+        ObjectMapper objectMapper = new ObjectMapper();
+        Item item;
+        try {
+            Class<Item> cl = ItemFactory.factory(type);
+            item = objectMapper.readValue(json, cl);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Couldn't parse json into a search request", e);
+        }
         item.setUserId(currentUser.getUser().getId());
         item.setId(UUID.randomUUID());
         this.repository.save(item);
@@ -82,33 +59,36 @@ public class ApiItemController {
 
     @RequestMapping(value = "/api/item/{id}", method = RequestMethod.DELETE)
     public Item delete(@PathVariable UUID id) throws MalformedURLException {
-        // TODO Check if item belongs to the user
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CurrentUser currentUser = (CurrentUser) authentication.getDetails();
         Item item = this.repository.findById(id);
-        this.repository.delete(item);
+        if (item.getUserId().equals(currentUser.getUser().getId())) {
+            this.repository.delete(item);
+        } else {
+            // TODO request other user item
+        }
         return item;
     }
 
-    @RequestMapping(value = "/api/link/{id}", method = RequestMethod.POST, consumes="application/json")
-    public Item updateLink(@RequestBody Link link) {
-        // TODO Check if item belongs to the user
-        return link;
-    }
+    @RequestMapping(value = "/api/item/{id}", method = RequestMethod.POST, consumes="application/json")
+    public Item updateItem(@PathVariable UUID id, @RequestBody String json) {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CurrentUser currentUser = (CurrentUser) authentication.getDetails();
+        Item item = this.repository.findById(id);
+        if (item == null) {
+            // TODO throw exception about item absence
+        }
+        if (item.getUserId().equals(currentUser.getUser().getId())) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                Item newItem = objectMapper.readValue(json, item.getClass());
+                item.populate(objectMapper.readValue(json, item.getClass()));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Couldn't parse json into an item request", e);
+            }
+            this.repository.save(item);
+        }
 
-    @RequestMapping(value = "/api/book/{id}", method = RequestMethod.POST, consumes="application/json")
-    public Item updateBook(@RequestBody Book book) {
-        // TODO Check if item belongs to the user
-        return book;
-    }
-
-    @RequestMapping(value = "/api/keyphrase/{id}", method = RequestMethod.POST, consumes="application/json")
-    public Item updateKeyphrase(@RequestBody Keyphrase keyphrase) {
-        // TODO Check if item belongs to the user
-        return keyphrase;
-    }
-
-    @RequestMapping(value = "/api/video/{id}", method = RequestMethod.POST, consumes="application/json")
-    public Item updateVideo(@RequestBody Video video) {
-        // TODO Check if item belongs to the user
-        return video;
+        return item;
     }
 }

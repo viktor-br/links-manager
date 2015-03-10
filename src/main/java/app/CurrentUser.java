@@ -72,7 +72,6 @@ public class CurrentUser implements UserDetails {
         return new HashSet<UserAuthority>();
     }
 
-    @JsonIgnore
     public String getPassword() {
         return password;
     }

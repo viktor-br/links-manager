@@ -7,9 +7,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
-/**
- * Created by viktor on 28.02.15.
- */
 public abstract class Item {
     @Id
     private UUID id;
@@ -55,6 +52,14 @@ public abstract class Item {
         return this.tags;
     }
 
+    public void setTags(HashSet<String> tags) {
+        this.tags.clear();
+
+        for(String t : tags) {
+            this.addTag(t);
+        }
+    }
+
     /**
      *
      * @param tagName
@@ -94,5 +99,22 @@ public abstract class Item {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    /**
+     * Populate item with values from other item.
+     *
+     * @param item
+     */
+    public void populate(Item item) {
+        if (item.getUrl() != null) {
+            this.setUrl(item.getUrl());
+        }
+        if (item.getDescription() != null) {
+            this.setDescription(item.getDescription());
+        }
+        if (item.getTags() != null) {
+            this.setTags(item.getTags());
+        }
     }
 }

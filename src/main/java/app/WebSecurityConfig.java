@@ -12,10 +12,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Created by viktor on 01.03.15.
- */
-//@EnableWebSecurity
 @Configuration
 @Order(1)
 class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -47,7 +43,7 @@ class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 //allow anonymous POSTs to login
                 .antMatchers(HttpMethod.POST, "/api/user/login").permitAll()
                 //allow anonymous PUT to register
-                .antMatchers(HttpMethod.PUT, "/api/user/register").permitAll()
+                .antMatchers(HttpMethod.PUT, "/api/user").permitAll()
 
                 //allow anonymous GETs to API
                 .antMatchers(HttpMethod.GET, "/api/**").permitAll()

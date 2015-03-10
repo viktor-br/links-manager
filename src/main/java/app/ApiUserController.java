@@ -10,15 +10,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * Created by viktor on 28.02.15.
- */
 @RestController
 public class ApiUserController {
     @Autowired
     private UserRepository repository;
 
-    @RequestMapping(value = "/api/user/register", method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/user", method = RequestMethod.PUT)
     public User register(@RequestBody User user) {
         User u = this.repository.findByUsername(user.getUsername());
         if (u == null) {

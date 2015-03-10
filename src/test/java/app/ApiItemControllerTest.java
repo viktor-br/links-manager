@@ -13,13 +13,16 @@ import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.UUID;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = MockServletContext.class)
 @WebAppConfiguration
-public class ApiControllerTest {
+public class ApiItemControllerTest {
 
     private MockMvc mvc;
 
@@ -29,9 +32,16 @@ public class ApiControllerTest {
     }
 
     @Test
-    public void getHello() throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/api").accept(MediaType.APPLICATION_JSON))
+    public void registerUser() throws Exception {
+        core.User user = new core.User();
+        user.setId(UUID.randomUUID());
+        user.setUsername("ut1");
+        user.setPassword("ut1p");
+        MockHttpServletRequestBuilder s = MockMvcRequestBuilders.put("/api/user").accept(MediaType.APPLICATION_JSON);
+        mvc.perform(s)
                 .andExpect(status().isOk())
-                .andExpect(content().string(equalTo("Greetings from Spring Boot!")));
+                .andExpect(content().json("username"))
+                .andExpect(content().json("password"))
+        ;
     }
 }

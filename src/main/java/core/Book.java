@@ -1,11 +1,8 @@
 package core;
 
-/**
- * Created by viktor on 28.02.15.
- */
 public class Book extends Item {
     private String title;
-    private Author author;
+    private String author;
 
     public String getTitle() {
         return title;
@@ -15,11 +12,21 @@ public class Book extends Item {
         this.title = title;
     }
 
-    public Author getAuthor() {
+    public String getAuthor() {
         return author;
     }
 
-    public void setAuthor(Author author) {
+    public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public void populate(Book item) {
+        super.populate(item);
+        if (item.getTitle() != null) {
+            this.setTitle(item.getTitle());
+        }
+        if (item.getAuthor() != null) {
+            this.setAuthor(item.getAuthor());
+        }
     }
 }
