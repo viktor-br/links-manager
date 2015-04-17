@@ -15,10 +15,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 @RestController
-@ComponentScan(basePackages = {"app"})
 public class ApiItemController {
     @Autowired
     private ItemRepository repository;

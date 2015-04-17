@@ -1,11 +1,6 @@
 package app;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import static org.junit.Assert.assertTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,29 +8,20 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.UUID;
+import org.springframework.web.client.RestTemplate;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = MockServletContext.class)
+@SpringApplicationConfiguration(classes = Application.class)
 @WebAppConfiguration
 @IntegrationTest("server.port:8181")
 public class ApiItemControllerTest {
-
-    private MockMvc mvc;
-
-    private String user1Token;
-
-    private String user2Token;
 
     @Autowired
     private UserRepository userRepository;
@@ -48,22 +34,31 @@ public class ApiItemControllerTest {
         this.userRepository.deleteAll();
         this.itemRepository.deleteAll();
 
-        // Register test users
-        this.user1Token = this.registerUserAndLogin("user1", "pass1");
-        this.user2Token = this.registerUserAndLogin("user2", "pass2");
-        mvc = MockMvcBuilders.standaloneSetup(new ApiItemController()).build();
+        // Create two test user
+        String json = this.getUserJson("u1", "u1p");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
+        restTemplate.put("http://localhost:8181/api/user", login);
     }
 
-    public String registerUserAndLogin(String uname, String upassword) throws Exception {
-        mvc.perform(put("http://localhost:8181/api/user").content(this.getUserJson(uname, upassword))
-                .contentType(MediaType.APPLICATION_JSON))
-        ;
+    @Test
+    public void createLink() throws Exception {
+        String json = this.getLink("http://google.com", "desc", new String[] {"t1", "t2"});
 
-        ResultActions result = mvc.perform(post("http://localhost:8181/api/user").content(this.getUserJson(uname, upassword))
-                .contentType(MediaType.APPLICATION_JSON))
-        ;
+        String token = this.getXAuthToken("u1", "u1p");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.set("X-AUTH_TOKEN", token);
+        HttpEntity<String> createLink = new HttpEntity<String>(json, httpHeaders);
+        restTemplate.put("http://localhost:8181/api/user", createLink);
 
-        return result.andReturn().getResponse().getHeader("X-AUTH-TOKEN");
+        ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/item/search", "{}", void.class);
+        assertTrue(loginResults.getStatusCode().is2xxSuccessful());
+        String res = loginResults.getBody().toString();
+        res.toString();
     }
 
     /**
@@ -93,6 +88,57 @@ public class ApiItemControllerTest {
 
             public void setUsername(String username) {
                 this.username = username;
+            }
+        });
+    }
+
+    /**
+     * Login and return X-AUTH-TOKEN
+     *
+     * @param username
+     * @param password
+     * @return
+     * @throws Exception
+     */
+    protected String getXAuthToken(String username, String password) throws Exception {
+        String json = this.getUserJson(username, password);
+        // Login
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
+        ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/user/login", login, Void.class);
+        return loginResults.getHeaders().getFirst("X-AUTH-TOKEN");
+    }
+
+    protected String getLink(final String iurl, final String idescription, final String[] itags) throws Exception {
+        return new ObjectMapper().writeValueAsString(new Object() {
+            private String url = iurl;
+            private String description = idescription;
+            private String[] tags = itags;
+
+            public String getUrl() {
+                return url;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public void setUrl(String url) {
+                this.url = url;
+            }
+
+            public void setDescription(String description) {
+                this.description = description;
+            }
+
+            public void setTags(String[] tags) {
+                this.tags = tags;
+            }
+
+            public String[] getTags() {
+                return this.tags;
             }
         });
     }
