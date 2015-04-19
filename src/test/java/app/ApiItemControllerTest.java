@@ -2,6 +2,7 @@ package app;
 
 import static org.junit.Assert.assertTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import core.Item;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,13 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockServletContext;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
@@ -51,14 +58,22 @@ public class ApiItemControllerTest {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        httpHeaders.set("X-AUTH_TOKEN", token);
+        httpHeaders.set("X-AUTH-TOKEN", token);
         HttpEntity<String> createLink = new HttpEntity<String>(json, httpHeaders);
-        restTemplate.put("http://localhost:8181/api/user", createLink);
+        restTemplate.put("http://localhost:8181/api/item/link", createLink);
 
-        ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/item/search", "{}", void.class);
-        assertTrue(loginResults.getStatusCode().is2xxSuccessful());
-        String res = loginResults.getBody().toString();
-        res.toString();
+        List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
+        messageConverters.add(new StringHttpMessageConverter());
+//        messageConverters.add(new MappingJacksonHttpMessageConverter());
+        restTemplate.setMessageConverters(messageConverters);
+
+        HttpEntity<String> getItems = new HttpEntity<String>(json, httpHeaders);
+        ResponseEntity searchResults = restTemplate.exchange(new URI("http://localhost:8181/api/item/search"), HttpMethod.POST, getItems, String.class);
+
+//        ResponseEntity<Void> searchResults = restTemplate.postForEntity("http://localhost:8181/api/item/search", "{}", void.class);
+        assertTrue(searchResults.getStatusCode().is2xxSuccessful());
+//        String res = searchResults.getBody().toString();
+//        res.toString();
     }
 
     /**
