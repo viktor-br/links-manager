@@ -1,9 +1,8 @@
-package core;
+package core.item;
 
 import org.springframework.data.annotation.Id;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 

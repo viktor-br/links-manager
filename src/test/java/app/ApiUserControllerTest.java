@@ -1,6 +1,9 @@
 package app;
 
 import static org.junit.Assert.*;
+
+import com.google.gson.Gson;
+import core.User;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +37,14 @@ public class ApiUserControllerTest {
 
     @Test
     public void registerAndLoginUser() throws Exception {
-        String json = this.getUserJson("u1", "u1p");
+        Gson gson = new Gson();
+
+        User u = new User();
+        u.setUsername("u1");
+        u.setPassword("u1p");
+
+        String json = gson.toJson(u);
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -47,7 +57,14 @@ public class ApiUserControllerTest {
 
     @Test
     public void registerUserWithSameUsername() throws Exception {
-        String json = this.getUserJson("u1", "u1p");
+        Gson gson = new Gson();
+
+        User u = new User();
+        u.setUsername("u1");
+        u.setPassword("u1p");
+
+        String json = gson.toJson(u);
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -62,36 +79,5 @@ public class ApiUserControllerTest {
         }
 
         assertTrue(catchedException);
-    }
-
-    /**
-     * Return json as a string for user with username and password.
-     *
-     * @param uname
-     * @param upassword
-     * @return
-     * @throws Exception
-     */
-    protected String getUserJson(final String uname, final String upassword) throws Exception {
-        return new ObjectMapper().writeValueAsString(new Object() {
-            private String username = uname;
-            private String password = upassword;
-
-            public String getUsername() {
-                return username;
-            }
-
-            public String getPassword() {
-                return password;
-            }
-
-            public void setPassword(String password) {
-                this.password = password;
-            }
-
-            public void setUsername(String username) {
-                this.username = username;
-            }
-        });
     }
 }

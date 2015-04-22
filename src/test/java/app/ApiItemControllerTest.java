@@ -2,7 +2,8 @@ package app;
 
 import static org.junit.Assert.assertTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import core.Item;
+import com.google.gson.Gson;
+import core.User;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +23,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.net.URL;
+
+import core.parser.ItemJsonParser;
+import core.item.Link;
+import core.item.Item;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
@@ -42,119 +49,83 @@ public class ApiItemControllerTest {
         this.itemRepository.deleteAll();
 
         // Create two test user
-        String json = this.getUserJson("u1", "u1p");
+        User u = new User();
+        u.setUsername("u1");
+        u.setPassword("u1p");
+        Gson gson = new Gson();
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
+        HttpEntity<String> login = new HttpEntity<String>(gson.toJson(u), httpHeaders);
         restTemplate.put("http://localhost:8181/api/user", login);
     }
 
     @Test
     public void createLink() throws Exception {
-        String json = this.getLink("http://google.com", "desc", new String[] {"t1", "t2"});
+        Gson gson = new Gson();
 
-        String token = this.getXAuthToken("u1", "u1p");
+        User u = new User();
+        u.setUsername("u1");
+        u.setPassword("u1p");
+
+        String linkUrl = "http://google.com";
+        String linkDesc = "desc";
+        String[] linkTags = new String[] {"t1", "t2"};
+        Link link = new Link();
+        link.setUrl(new URL(linkUrl));
+        link.setDescription(linkDesc);
+        HashSet tags = new HashSet<String>();
+        for(int i = 0; i < linkTags.length; i++) {
+            tags.add(linkTags[i]);
+        }
+        link.setTags(tags);
+
+        String json = gson.toJson(link);
+
+        String token = this.getXAuthToken(u);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         httpHeaders.set("X-AUTH-TOKEN", token);
-        HttpEntity<String> createLink = new HttpEntity<String>(json, httpHeaders);
-        restTemplate.put("http://localhost:8181/api/item/link", createLink);
+
+        restTemplate.put("http://localhost:8181/api/item/link", new HttpEntity<String>(json, httpHeaders));
+        restTemplate.put("http://localhost:8181/api/item/link", new HttpEntity<String>(json, httpHeaders));
 
         List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
         messageConverters.add(new StringHttpMessageConverter());
-//        messageConverters.add(new MappingJacksonHttpMessageConverter());
         restTemplate.setMessageConverters(messageConverters);
 
         HttpEntity<String> getItems = new HttpEntity<String>(json, httpHeaders);
         ResponseEntity searchResults = restTemplate.exchange(new URI("http://localhost:8181/api/item/search"), HttpMethod.POST, getItems, String.class);
 
-//        ResponseEntity<Void> searchResults = restTemplate.postForEntity("http://localhost:8181/api/item/search", "{}", void.class);
         assertTrue(searchResults.getStatusCode().is2xxSuccessful());
-//        String res = searchResults.getBody().toString();
-//        res.toString();
-    }
 
-    /**
-     * Return json as a string for user with username and password.
-     *
-     * @param uname
-     * @param upassword
-     * @return
-     * @throws Exception
-     */
-    protected String getUserJson(final String uname, final String upassword) throws Exception {
-        return new ObjectMapper().writeValueAsString(new Object() {
-            private String username = uname;
-            private String password = upassword;
+        ItemJsonParser parser = new ItemJsonParser();
+        ArrayList<Item> items = parser.parseArray(searchResults.getBody().toString());
 
-            public String getUsername() {
-                return username;
-            }
-
-            public String getPassword() {
-                return password;
-            }
-
-            public void setPassword(String password) {
-                this.password = password;
-            }
-
-            public void setUsername(String username) {
-                this.username = username;
-            }
-        });
+        assertTrue(items.size() == 2);
+        assertTrue(items.get(0) instanceof Link);
+        assertTrue(items.get(0).getUrl().equals(new URL(linkUrl)));
+        assertTrue(items.get(0).getDescription().equals(linkDesc));
+        assertTrue(items.get(0).getTags().size() == linkTags.length);
     }
 
     /**
      * Login and return X-AUTH-TOKEN
      *
-     * @param username
-     * @param password
+     * @param u
      * @return
      * @throws Exception
      */
-    protected String getXAuthToken(String username, String password) throws Exception {
-        String json = this.getUserJson(username, password);
+    protected String getXAuthToken(User u) throws Exception {
         // Login
+        Gson gson = new Gson();
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
+        HttpEntity<String> login = new HttpEntity<String>(gson.toJson(u), httpHeaders);
         ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/user/login", login, Void.class);
         return loginResults.getHeaders().getFirst("X-AUTH-TOKEN");
-    }
-
-    protected String getLink(final String iurl, final String idescription, final String[] itags) throws Exception {
-        return new ObjectMapper().writeValueAsString(new Object() {
-            private String url = iurl;
-            private String description = idescription;
-            private String[] tags = itags;
-
-            public String getUrl() {
-                return url;
-            }
-
-            public String getDescription() {
-                return description;
-            }
-
-            public void setUrl(String url) {
-                this.url = url;
-            }
-
-            public void setDescription(String description) {
-                this.description = description;
-            }
-
-            public void setTags(String[] tags) {
-                this.tags = tags;
-            }
-
-            public String[] getTags() {
-                return this.tags;
-            }
-        });
     }
 }

@@ -1,4 +1,4 @@
-package core;
+package core.item;
 
 public class ItemFactory {
     public static Class<Item> factory(String type) {

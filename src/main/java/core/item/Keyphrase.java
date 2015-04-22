@@ -1,4 +1,4 @@
-package core;
+package core.item;
 
 public class Keyphrase extends Item {
     private String text;

@@ -1,4 +1,4 @@
-package core;
+package core.item;
 
 public class Book extends Item {
     private String title;

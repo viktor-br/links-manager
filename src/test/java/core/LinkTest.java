@@ -1,5 +1,6 @@
 package core;
 
+import core.item.Link;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.assertTrue;

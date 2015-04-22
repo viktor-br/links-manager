@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 //import java.util.UUID;
 
-import core.Item;
+import core.item.Item;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ItemRepository extends MongoRepository<Item, String> {
