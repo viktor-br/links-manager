@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
+import core.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -18,20 +19,27 @@ public class TokenAuthenticationService {
     private final TokenHandler tokenHandler;
 
     @Autowired
+    private UserRepository repository;
+
+    @Autowired
     public TokenAuthenticationService(@Value("${token.secret}") String secret) {
         tokenHandler = new TokenHandler(DatatypeConverter.parseBase64Binary(secret));
     }
 
     public void addAuthentication(HttpServletResponse response, UserAuthentication authentication) {
         final CurrentUser user = authentication.getDetails();
-        user.setExpires(System.currentTimeMillis() + TEN_DAYS);
-        response.addHeader(AUTH_HEADER_NAME, tokenHandler.createTokenForUser(user));
+        user.getUser().setExpires(System.currentTimeMillis() + TEN_DAYS);
+        String token = tokenHandler.createTokenForUser(user);
+        user.getUser().setToken(token);
+        this.repository.save(user.getUser());
+        response.addHeader(AUTH_HEADER_NAME, token);
     }
 
     public Authentication getAuthentication(HttpServletRequest request) {
         final String token = request.getHeader(AUTH_HEADER_NAME);
         if (token != null) {
-            final CurrentUser user = tokenHandler.parseUserFromToken(token);
+            User u = this.repository.findByToken(token);
+            final CurrentUser user = tokenHandler.parseUserFromToken(u);
             if (user != null) {
                 return new UserAuthentication(user);
             }

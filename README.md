@@ -10,6 +10,6 @@ TODO
 
 - User creation restriction
 - Check user exist (if user logged-in, they will be able to use service till session expires)
-- Add exception and its processing
+- Add exception and its processing (proper codes for exceptions)
 - Items search
 - Versioning

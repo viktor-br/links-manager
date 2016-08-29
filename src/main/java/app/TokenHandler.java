@@ -1,10 +1,7 @@
 package app;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Date;
 
 import javax.crypto.Mac;
@@ -14,12 +11,10 @@ import javax.xml.bind.DatatypeConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import core.User;
+
 public final class TokenHandler {
-
     private static final String HMAC_ALGO = "HmacSHA256";
-    private static final String SEPARATOR = ".";
-    private static final String SEPARATOR_SPLITTER = "\\.";
-
     private final Mac hmac;
 
     public TokenHandler(byte[] secretKey) {
@@ -33,23 +28,10 @@ public final class TokenHandler {
         }
     }
 
-    public CurrentUser parseUserFromToken(String token) {
-        final String[] parts = token.split(SEPARATOR_SPLITTER);
-        if (parts.length == 2 && parts[0].length() > 0 && parts[1].length() > 0) {
-            try {
-                final byte[] userBytes = fromBase64(parts[0]);
-                final byte[] hash = fromBase64(parts[1]);
-
-                boolean validHash = Arrays.equals(createHmac(userBytes), hash);
-                if (validHash) {
-                    final CurrentUser user = fromJSON(userBytes);
-                    if (new Date().getTime() < user.getExpires()) {
-                        return user;
-                    }
-                }
-            } catch (IllegalArgumentException e) {
-                //log tempering attempt here
-            }
+    public CurrentUser parseUserFromToken(User user) {
+        CurrentUser currentUser = new CurrentUser(user);
+        if (user.getExpires() > new Date().getTime()) {
+            return currentUser;
         }
         return null;
     }
@@ -58,23 +40,20 @@ public final class TokenHandler {
         byte[] userBytes = toJSON(user);
         byte[] hash = createHmac(userBytes);
         final StringBuilder sb = new StringBuilder(170);
-        sb.append(toBase64(userBytes));
-        sb.append(SEPARATOR);
         sb.append(toBase64(hash));
-        return sb.toString();
-    }
+        String h = sb.toString();
 
-    private CurrentUser fromJSON(final byte[] userBytes) {
-        try {
-            return new ObjectMapper().readValue(new ByteArrayInputStream(userBytes), CurrentUser.class);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        user.getUser().setToken(h);
+        return h;
     }
 
     private byte[] toJSON(CurrentUser user) {
         try {
-            return new ObjectMapper().writeValueAsBytes(user);
+            CurrentUserAuth cua = new CurrentUserAuth();
+            cua.setId(user.getUser().getId());
+            cua.setUsername(user.getUsername());
+            cua.setExpires(user.getUser().getExpires());
+            return new ObjectMapper().writeValueAsBytes(cua);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
@@ -82,10 +61,6 @@ public final class TokenHandler {
 
     private String toBase64(byte[] content) {
         return DatatypeConverter.printBase64Binary(content);
-    }
-
-    private byte[] fromBase64(String content) {
-        return DatatypeConverter.parseBase64Binary(content);
     }
 
     // synchronized to guard internal hmac object

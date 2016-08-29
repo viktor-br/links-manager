@@ -6,6 +6,8 @@ public class User {
     private UUID id;
     private String username;
     private String password;
+    private String token;
+    private long expires;
 
     public String getPassword() {
         return password;
@@ -29,5 +31,21 @@ public class User {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public long getExpires() {
+        return expires;
+    }
+
+    public void setExpires(long expires) {
+        this.expires = expires;
     }
 }
