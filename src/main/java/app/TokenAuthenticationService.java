@@ -39,9 +39,11 @@ public class TokenAuthenticationService {
         final String token = request.getHeader(AUTH_HEADER_NAME);
         if (token != null) {
             User u = this.repository.findByToken(token);
-            final CurrentUser user = tokenHandler.parseUserFromToken(u);
-            if (user != null) {
-                return new UserAuthentication(user);
+            if (u != null) {
+                final CurrentUser user = tokenHandler.parseUserFromToken(u);
+                if (user != null) {
+                    return new UserAuthentication(user);
+                }
             }
         }
         return null;
