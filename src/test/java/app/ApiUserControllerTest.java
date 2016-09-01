@@ -21,11 +21,17 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Calendar;
+import java.util.Date;
+import java.util.UUID;
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 @WebAppConfiguration
 @IntegrationTest("server.port:8181")
 public class ApiUserControllerTest {
+
+    private String token = "token";
 
     @Autowired
     private UserRepository userRepository;
@@ -33,6 +39,18 @@ public class ApiUserControllerTest {
     @Before
     public void setUp() throws Exception {
         this.userRepository.deleteAll();
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        cal.add(Calendar.HOUR_OF_DAY, 1);
+
+        User admin = new User();
+        admin.setId(UUID.randomUUID());
+        admin.setUsername("admin");
+        admin.setPassword("admin");
+        admin.setToken(this.token);
+        admin.setExpires(cal.getTime().getTime());
+        this.userRepository.save(admin);
     }
 
     @Test
@@ -48,6 +66,7 @@ public class ApiUserControllerTest {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.set("X-AUTH-TOKEN", this.token);
         HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
         restTemplate.put("http://localhost:8181/api/user", login);
         ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/user/login", login, Void.class);
@@ -68,6 +87,7 @@ public class ApiUserControllerTest {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.set("X-AUTH-TOKEN", this.token);
         HttpEntity<String> login = new HttpEntity<String>(json, httpHeaders);
         restTemplate.put("http://localhost:8181/api/user", login);
 

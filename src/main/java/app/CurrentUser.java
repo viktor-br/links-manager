@@ -31,6 +31,10 @@ public class CurrentUser implements UserDetails {
 
     private String password;
 
+    private long expires;
+
+    private String token;
+
     public CurrentUser() {
     }
 
@@ -103,5 +107,23 @@ public class CurrentUser implements UserDetails {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    @JsonIgnore
+    public String getToken() {
+        return token;
+    }
+
+    @JsonIgnore
+    public long getExpires() {
+        return expires;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public void setExpires(long expires) {
+        this.expires = expires;
     }
 }

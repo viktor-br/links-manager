@@ -22,9 +22,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.net.URL;
 
 import core.parser.ItemJsonParser;
@@ -37,6 +35,8 @@ import core.item.Item;
 @IntegrationTest("server.port:8181")
 public class ApiItemControllerTest {
 
+    private String token = "token";
+
     @Autowired
     private UserRepository userRepository;
 
@@ -48,17 +48,18 @@ public class ApiItemControllerTest {
         this.userRepository.deleteAll();
         this.itemRepository.deleteAll();
 
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        cal.add(Calendar.HOUR_OF_DAY, 1);
+
         // Create two test user
         User u = new User();
+        u.setId(UUID.randomUUID());
         u.setUsername("u1");
         u.setPassword("u1p");
-        Gson gson = new Gson();
-
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> login = new HttpEntity<String>(gson.toJson(u), httpHeaders);
-        restTemplate.put("http://localhost:8181/api/user", login);
+        u.setToken(this.token);
+        u.setExpires(cal.getTime().getTime());
+        this.userRepository.save(u);
     }
 
     @Test
@@ -83,11 +84,11 @@ public class ApiItemControllerTest {
 
         String json = gson.toJson(link);
 
-        String token = this.getXAuthToken(u);
+//        String token = this.getXAuthToken(u);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        httpHeaders.set("X-AUTH-TOKEN", token);
+        httpHeaders.set("X-AUTH-TOKEN", this.token);
 
         restTemplate.put("http://localhost:8181/api/item/link", new HttpEntity<String>(json, httpHeaders));
         restTemplate.put("http://localhost:8181/api/item/link", new HttpEntity<String>(json, httpHeaders));
@@ -109,23 +110,5 @@ public class ApiItemControllerTest {
         assertTrue(items.get(0).getUrl().equals(new URL(linkUrl)));
         assertTrue(items.get(0).getDescription().equals(linkDesc));
         assertTrue(items.get(0).getTags().size() == linkTags.length);
-    }
-
-    /**
-     * Login and return X-AUTH-TOKEN
-     *
-     * @param u
-     * @return
-     * @throws Exception
-     */
-    protected String getXAuthToken(User u) throws Exception {
-        // Login
-        Gson gson = new Gson();
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> login = new HttpEntity<String>(gson.toJson(u), httpHeaders);
-        ResponseEntity<Void> loginResults = restTemplate.postForEntity("http://localhost:8181/api/user/login", login, Void.class);
-        return loginResults.getHeaders().getFirst("X-AUTH-TOKEN");
     }
 }
