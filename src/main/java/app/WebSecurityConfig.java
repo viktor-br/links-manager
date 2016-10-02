@@ -3,6 +3,7 @@ package app;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -29,6 +30,11 @@ class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
+    public void configure(WebSecurity web) throws Exception {
+        web.ignoring().antMatchers("/api/ping");
+    }
+
+    @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .exceptionHandling().and()
@@ -36,27 +42,15 @@ class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .servletApi().and()
                 .headers().cacheControl().and()
                 .authorizeRequests()
-
-                        //allow anonymous resource requests
+                //allow anonymous resource requests
                 .antMatchers("/").permitAll()
                 .antMatchers("/favicon.ico").permitAll()
                 .antMatchers("/resources/**").permitAll()
-
                 //allow anonymous POSTs to login
                 .antMatchers(HttpMethod.POST, "/api/user/login").permitAll()
-                //allow anonymous PUT to register
+                // TODO allow any user to register new user for now, but should be, for sure, restricted later.
                 .antMatchers(HttpMethod.PUT, "/api/user").permitAll()
-
-                //allow anonymous GETs to API
-                .antMatchers(HttpMethod.GET, "/api/**").permitAll()
-
-                //defined Admin only API area
-//                .antMatchers("/admin/**").hasRole("ADMIN")
-
-                //all other request need to be authenticated
-//                .anyRequest().hasRole("USER")
                 .and()
-
                 // custom JSON based authentication by POST of {"username":"<name>","password":"<password>"} which sets the token header upon authentication
                 .addFilterBefore(new StatelessLoginFilter("/api/user/login", tokenAuthenticationService, userDetailsService, authenticationManager()), UsernamePasswordAuthenticationFilter.class)
                 // custom Token based authentication based on the header previously given to the client

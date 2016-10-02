@@ -1,3 +1,4 @@
+Simple links manager application. CRUD operations for a link with additional type info (video, book, simple link).
 ```
 # Run mongo container
 docker run --name links-manager-mongo -d mongo
